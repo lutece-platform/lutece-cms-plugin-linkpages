@@ -1,3 +1,6 @@
+-- liquibase formatted sql
+-- changeset linkpages:create_linkpages_portlet.sql
+-- preconditions onFail:MARK_RAN onError:WARN
 --
 -- Structure for table linkpages_portlet
 --
