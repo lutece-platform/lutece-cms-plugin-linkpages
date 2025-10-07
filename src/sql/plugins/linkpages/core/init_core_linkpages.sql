@@ -1,3 +1,6 @@
+-- liquibase formatted sql
+-- changeset linkpages:init_core_linkpages.sql
+-- preconditions onFail:MARK_RAN onError:WARN
 --
 -- Dumping data for table core_portlet_type
 --
