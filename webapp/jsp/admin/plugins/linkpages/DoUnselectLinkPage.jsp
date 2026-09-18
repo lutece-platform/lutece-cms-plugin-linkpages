@@ -1,8 +1,6 @@
 <%@ page errorPage="../../ErrorPage.jsp" %>
-<jsp:useBean id="portletLinkPages" scope="session" class="fr.paris.lutece.plugins.linkpages.web.portlet.LinkPagesPortletJspBean" />
 
+<%@page import="fr.paris.lutece.plugins.linkpages.web.portlet.LinkPagesPortletJspBean"%>
 
-<%
-    portletLinkPages.init( request,   portletLinkPages.RIGHT_MANAGE_ADMIN_SITE  );
-    response.sendRedirect( portletLinkPages.doUnselectLinkPage( request ) );
-%>
+${ linkPagesPortletJspBean.init( pageContext.request, LinkPagesPortletJspBean.RIGHT_MANAGE_ADMIN_SITE ) }
+${ pageContext.response.sendRedirect( linkPagesPortletJspBean.doUnselectLinkPage( pageContext.request ) ) }

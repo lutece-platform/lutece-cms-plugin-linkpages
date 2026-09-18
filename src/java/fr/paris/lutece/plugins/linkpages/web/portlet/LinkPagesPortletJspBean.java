@@ -37,34 +37,43 @@ import fr.paris.lutece.plugins.linkpages.business.portlet.LinkPagesPortlet;
 import fr.paris.lutece.plugins.linkpages.business.portlet.LinkPagesPortletHome;
 import fr.paris.lutece.portal.business.page.Page;
 import fr.paris.lutece.portal.business.page.PageHome;
+import fr.paris.lutece.portal.business.portlet.Portlet;
 import fr.paris.lutece.portal.business.portlet.PortletHome;
+import fr.paris.lutece.portal.business.portlet.PortletTypeHome;
 import fr.paris.lutece.portal.service.message.AdminMessage;
 import fr.paris.lutece.portal.service.message.AdminMessageService;
+import fr.paris.lutece.portal.service.security.SecurityTokenService;
+import fr.paris.lutece.portal.web.constants.Messages;
 import fr.paris.lutece.portal.service.page.IPageService;
 import fr.paris.lutece.portal.service.page.PageResourceIdService;
-import fr.paris.lutece.portal.service.spring.SpringContextService;
+import fr.paris.lutece.portal.service.i18n.I18nService;
+import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.template.AppTemplateService;
 import fr.paris.lutece.portal.web.portlet.PortletJspBean;
 import fr.paris.lutece.util.ReferenceItem;
 import fr.paris.lutece.util.ReferenceList;
 import fr.paris.lutece.util.html.HtmlTemplate;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 
-import javax.servlet.http.HttpServletRequest;
+import org.apache.commons.lang3.StringUtils;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 
 /**
- * This class provides the user interface to manage LinkPages Portlet
+ * Provides the user interface to manage LinkPages portlet
  */
+@RequestScoped
+@Named
 public class LinkPagesPortletJspBean extends PortletJspBean
 {
-    ////////////////////////////////////////////////////////////////////////////
-    // Constants
 
-    // MARKS
     private static final String MARK_COMBO_LINKPAGES = "combo_linkpages";
     private static final String MARK_LINKPAGE_ORDER = "linkpage_order";
     private static final String MARK_COMBO_LINKPAGES_ORDER = "combo_linkpages_order";
@@ -73,24 +82,32 @@ public class LinkPagesPortletJspBean extends PortletJspBean
     private final static String MARK_LINKPAGE_DESCRIPTION = "linkpage_description";
     private final static String MARK_NEW_LINKPAGE = "new_linkpage";
     private static final String MARK_PORTLET_ID = "portlet_id";
+    private static final String MESSAGE_PORTLET_TYPE_NOT_FOUND = "linkpages.message.portletTypeNotFound";
+    private static final String MESSAGE_PORTLET_NOT_FOUND = "linkpages.message.portletNotFound";
+    private static final String MESSAGE_INVALID_TOKEN = "linkpages.message.invalidToken";
+    private static final String ACTION_CREATE_PORTLET = "linkpages.createPortlet";
+    private static final String ACTION_MODIFY_PORTLET = "linkpages.modifyPortlet";
+    private static final String ACTION_SELECT_LINKPAGE = "linkpages.selectLinkPage";
+    private static final String ACTION_UNSELECT_LINKPAGE = "linkpages.unselectLinkPage";
+    private static final String ACTION_MODIFY_ORDER = "linkpages.modifyOrderLinkPage";
+    private static final String MARK_TOKEN_SELECT = "token_select";
+    private static final String MARK_TOKEN_ORDER = "token_order";
+    private static final String MARK_TOKEN_UNSELECT = "token_unselect";
     private static final String MARK_LINKPAGES_LIST = "linkpages_list";
     private static final String MARK_PAGE_ID = "page_id";
 
-    //Parameters
     private static final String PARAMETER_LINKPAGE = "linkpage";
     private static final String PARAMETER_LINKPAGE_ORDER = "linkpage_order";
 
-    //Templates
     private static final String TEMPLATE_LINKPAGES_LIST = "admin/plugins/linkpages/linkpages_list.html";
 
-    //Messages
     private static final String MESSAGE_LINKPAGE_NOT_EXIST = "linkpages.message.mandatory.linkpageNotExisted";
     private static final String MESSAGE_PORTLET_LINK_PAGE_SELECTED = "linkpages.message.portlet.linkpageAlreadySelected";
 
-    // Jsp
     private static final String JSP_DO_MODIFY_PORTLET = "../../DoModifyPortlet.jsp";
 
-    private IPageService _pageService = (IPageService) SpringContextService.getBean("pageService");
+    @Inject
+    private IPageService _pageService;
 
 
     /**
@@ -111,11 +128,18 @@ public class LinkPagesPortletJspBean extends PortletJspBean
      */
     public String getCreate( HttpServletRequest request )
     {
+        String strPortletTypeId = request.getParameter( PARAMETER_PORTLET_TYPE_ID );
+
+        if ( StringUtils.isEmpty( strPortletTypeId ) || PortletTypeHome.findByPrimaryKey( strPortletTypeId ) == null
+                || PortletTypeHome.findByPrimaryKey( strPortletTypeId ).getDoCreateUrl( ) == null )
+        {
+            return I18nService.getLocalizedString( MESSAGE_PORTLET_TYPE_NOT_FOUND, getLocale( ) );
+        }
+
         String strIdPage = request.getParameter( PARAMETER_PAGE_ID );
         String strIdPortletType = request.getParameter( PARAMETER_PORTLET_TYPE_ID );
 
         HashMap<String, Object> model = new HashMap<>( );
-        // LinkPages list combo
         ReferenceList linkPageAuthorized = new ReferenceList(  );
         ReferenceList linkPage = LinkPagesPortletHome.getLinkPagesList(  );
 
@@ -129,6 +153,7 @@ public class LinkPagesPortletJspBean extends PortletJspBean
         }
 
         model.put( MARK_COMBO_LINKPAGES, linkPageAuthorized );
+        model.put( SecurityTokenService.MARK_TOKEN, getSecurityTokenService( ).getToken( request, ACTION_CREATE_PORTLET ) );
 
         HtmlTemplate template = getCreateTemplate( strIdPage, strIdPortletType , model);
 
@@ -143,23 +168,27 @@ public class LinkPagesPortletJspBean extends PortletJspBean
      */
     public String getModify( HttpServletRequest request )
     {
+        LinkPagesPortlet portlet = findPortlet( request );
+
+        if ( portlet == null )
+        {
+            return I18nService.getLocalizedString( MESSAGE_PORTLET_NOT_FOUND, getLocale( ) );
+        }
+
         String strIdPortlet = request.getParameter( PARAMETER_PORTLET_ID );
-        int nIdPortlet = Integer.parseInt( strIdPortlet );
-        LinkPagesPortlet portlet = (LinkPagesPortlet) PortletHome.findByPrimaryKey( nIdPortlet );
+        int nIdPortlet = portlet.getId( );
         int nPageId = portlet.getPageId(  );
 
-        HashMap model = new HashMap(  );
-        model.put( MARK_LINKPAGES_LIST, getLinkPagesInPortletList( nIdPortlet ) );
+        HashMap<String, Object> model = new HashMap<>(  );
+        model.put( MARK_LINKPAGES_LIST, getLinkPagesInPortletList( request, nIdPortlet ) );
         model.put( MARK_PORTLET_ID, strIdPortlet );
         model.put( MARK_PAGE_ID, nPageId );
 
-        // LinkPages order combo
         int nMax = LinkPagesPortletHome.getMaxOrder( nIdPortlet );
         nMax = nMax + 1;
         model.put( MARK_LINKPAGE_ORDER, Integer.toString( nMax ) );
         model.put( MARK_COMBO_LINKPAGES_ORDER, getNewLinkPageOrdersList( nIdPortlet ) );
 
-        // LinkPages list combo
         ReferenceList linkPageAuthorized = new ReferenceList(  );
         ReferenceList linkPage = LinkPagesPortletHome.getLinkPagesList(  );
 
@@ -173,6 +202,8 @@ public class LinkPagesPortletJspBean extends PortletJspBean
         }
 
         model.put( MARK_COMBO_LINKPAGES, linkPageAuthorized );
+        model.put( SecurityTokenService.MARK_TOKEN, getSecurityTokenService( ).getToken( request, ACTION_MODIFY_PORTLET ) );
+        model.put( MARK_TOKEN_SELECT, getSecurityTokenService( ).getToken( request, ACTION_SELECT_LINKPAGE ) );
 
         HtmlTemplate template = getModifyTemplate( portlet, model );
 
@@ -187,11 +218,21 @@ public class LinkPagesPortletJspBean extends PortletJspBean
      */
     public String doCreate( HttpServletRequest request )
     {
-        LinkPagesPortlet portlet = new LinkPagesPortlet(  );
+        if ( !getSecurityTokenService( ).validate( request, ACTION_CREATE_PORTLET ) )
+        {
+            return AdminMessageService.getMessageUrl( request, MESSAGE_INVALID_TOKEN, AdminMessage.TYPE_STOP );
+        }
+
         String strIdPage = request.getParameter( PARAMETER_PAGE_ID );
+
+        if ( StringUtils.isEmpty( strIdPage ) || !StringUtils.isNumeric( strIdPage ) )
+        {
+            return AdminMessageService.getMessageUrl( request, Messages.MANDATORY_FIELDS, AdminMessage.TYPE_STOP );
+        }
+
+        LinkPagesPortlet portlet = new LinkPagesPortlet(  );
         int nIdPage = Integer.parseInt( strIdPage );
 
-        // get portlet common attributes
         String strErrorUrl = setPortletCommonData( request, portlet );
 
         if ( strErrorUrl != null )
@@ -201,10 +242,8 @@ public class LinkPagesPortletJspBean extends PortletJspBean
 
         portlet.setPageId( nIdPage );
 
-        //Portlet creation
         LinkPagesPortletHome.getInstance(  ).create( portlet );
 
-        // insert linkpage
         String strLinkPageId = request.getParameter( PARAMETER_LINKPAGE );
 
         if ( ( strLinkPageId == null ) )
@@ -227,12 +266,18 @@ public class LinkPagesPortletJspBean extends PortletJspBean
      */
     public String doModify( HttpServletRequest request )
     {
-        //recovery of the portlet
-        String strIdPortlet = request.getParameter( PARAMETER_PORTLET_ID );
-        int nIdPortlet = Integer.parseInt( strIdPortlet );
-        LinkPagesPortlet portlet = (LinkPagesPortlet) PortletHome.findByPrimaryKey( nIdPortlet );
+        if ( !getSecurityTokenService( ).validate( request, ACTION_MODIFY_PORTLET ) )
+        {
+            return AdminMessageService.getMessageUrl( request, MESSAGE_INVALID_TOKEN, AdminMessage.TYPE_STOP );
+        }
 
-        // get portlet common attributes
+        LinkPagesPortlet portlet = findPortlet( request );
+
+        if ( portlet == null )
+        {
+            return AdminMessageService.getMessageUrl( request, MESSAGE_PORTLET_NOT_FOUND, AdminMessage.TYPE_STOP );
+        }
+
         String strErrorUrl = setPortletCommonData( request, portlet );
 
         if ( strErrorUrl != null )
@@ -240,10 +285,8 @@ public class LinkPagesPortletJspBean extends PortletJspBean
             return strErrorUrl;
         }
 
-        //Update of the portlet
         portlet.update(  );
 
-        //Displays the page with the updated portlet
         return getPageUrl( portlet.getPageId(  ) );
     }
 
@@ -269,10 +312,11 @@ public class LinkPagesPortletJspBean extends PortletJspBean
     /**
      * Returns The list of linkpages wich belong to a specified portlet
      *
+     * @param request The http request
      * @param nPortletId The identifier of the portlet
      * @return A list of linkpages
      */
-    private String getLinkPagesInPortletList( int nPortletId )
+    private String getLinkPagesInPortletList( HttpServletRequest request, int nPortletId )
     {
         StringBuilder strLinkPagesList = new StringBuilder(  );
 
@@ -281,8 +325,7 @@ public class LinkPagesPortletJspBean extends PortletJspBean
             if ( _pageService.isAuthorizedAdminPage( page.getId(  ), PageResourceIdService.PERMISSION_VIEW,
                         getUser(  ) ) )
             {
-                //Page page = (Page) i.next (  );
-                HashMap model = new HashMap(  );
+                HashMap<String, Object> model = new HashMap<>(  );
                 int nIdPage = page.getId(  );
                 model.put( MARK_LINKPAGE_ID, page.getId(  ) );
                 model.put( MARK_LINKPAGE_NAME, page.getName(  ) );
@@ -290,8 +333,10 @@ public class LinkPagesPortletJspBean extends PortletJspBean
                 model.put( MARK_NEW_LINKPAGE, "0" );
                 model.put( MARK_COMBO_LINKPAGES_ORDER, getOrdersList( nPortletId ) );
                 model.put( MARK_PORTLET_ID, nPortletId );
+                model.put( MARK_TOKEN_ORDER, getSecurityTokenService( ).getToken( request, ACTION_MODIFY_ORDER ) );
+                model.put( MARK_TOKEN_UNSELECT, getSecurityTokenService( ).getToken( request, ACTION_UNSELECT_LINKPAGE ) );
 
-                Integer nOrderLinkPage = new Integer( LinkPagesPortletHome.getLinkPageOrder( nPortletId, page.getId(  ) ) );
+                Integer nOrderLinkPage = Integer.valueOf( LinkPagesPortletHome.getLinkPageOrder( nPortletId, page.getId(  ) ) );
                 model.put( MARK_LINKPAGE_ORDER, nOrderLinkPage.toString(  ) );
 
                 strLinkPagesList.append( AppTemplateService.getTemplate( TEMPLATE_LINKPAGES_LIST, getLocale(  ), model )
@@ -329,9 +374,20 @@ public class LinkPagesPortletJspBean extends PortletJspBean
      */
     public String doModifyOrderLinkPage( HttpServletRequest request )
     {
+        if ( !getSecurityTokenService( ).validate( request, ACTION_MODIFY_ORDER ) )
+        {
+            return AdminMessageService.getMessageUrl( request, MESSAGE_INVALID_TOKEN, AdminMessage.TYPE_STOP );
+        }
+
         String strPortletId = request.getParameter( PARAMETER_PORTLET_ID );
-        int nPortletId = Integer.parseInt( strPortletId );
         String strLinkPageId = request.getParameter( PARAMETER_PAGE_ID );
+
+        if ( !StringUtils.isNumeric( strPortletId ) || !StringUtils.isNumeric( strLinkPageId ) )
+        {
+            return AdminMessageService.getMessageUrl( request, Messages.MANDATORY_FIELDS, AdminMessage.TYPE_STOP );
+        }
+
+        int nPortletId = Integer.parseInt( strPortletId );
         int nLinkPageId = Integer.parseInt( strLinkPageId );
         int nOldOrder = LinkPagesPortletHome.getLinkPageOrder( nPortletId, nLinkPageId );
         String strOrder = request.getParameter( PARAMETER_LINKPAGE_ORDER );
@@ -369,6 +425,11 @@ public class LinkPagesPortletJspBean extends PortletJspBean
      */
     public String doUnselectLinkPage( HttpServletRequest request )
     {
+        if ( !getSecurityTokenService( ).validate( request, ACTION_UNSELECT_LINKPAGE ) )
+        {
+            return AdminMessageService.getMessageUrl( request, MESSAGE_INVALID_TOKEN, AdminMessage.TYPE_STOP );
+        }
+
         String strPortletId = request.getParameter( PARAMETER_PORTLET_ID );
         int nPortletId = Integer.parseInt( strPortletId );
         String strLinkPageId = request.getParameter( PARAMETER_PAGE_ID );
@@ -376,7 +437,6 @@ public class LinkPagesPortletJspBean extends PortletJspBean
         int nOrder = LinkPagesPortletHome.getLinkPageOrder( nPortletId, nLinkPageId );
         int nMax = LinkPagesPortletHome.getMaxOrder( nPortletId );
 
-        // Updating Database
         LinkPagesPortletHome.removeLinkPage( nPortletId, nLinkPageId );
 
         for ( int i = nOrder + 1; i < ( nMax + 1 ); i++ )
@@ -396,6 +456,11 @@ public class LinkPagesPortletJspBean extends PortletJspBean
      */
     public String doSelectLinkPage( HttpServletRequest request )
     {
+        if ( !getSecurityTokenService( ).validate( request, ACTION_SELECT_LINKPAGE ) )
+        {
+            return AdminMessageService.getMessageUrl( request, MESSAGE_INVALID_TOKEN, AdminMessage.TYPE_STOP );
+        }
+
         String strPortletId = request.getParameter( PARAMETER_PORTLET_ID );
         int nPortletId = Integer.parseInt( strPortletId );
         String strOrder = request.getParameter( PARAMETER_LINKPAGE_ORDER );
@@ -410,7 +475,6 @@ public class LinkPagesPortletJspBean extends PortletJspBean
 
         int nLinkPageId = Integer.parseInt( strLinkPageId );
 
-        // Checking duplicate
         if ( LinkPagesPortletHome.testDuplicate( nPortletId, nLinkPageId ) )
         {
             return AdminMessageService.getMessageUrl( request, MESSAGE_PORTLET_LINK_PAGE_SELECTED,
@@ -447,15 +511,14 @@ public class LinkPagesPortletJspBean extends PortletJspBean
 
         int nOrder = nMax + 1;
 
-        Collection linkPagesList = PageHome.getChildPages( portlet.getPageId(  ) );
+        Collection<Page> linkPagesList = PageHome.getChildPages( portlet.getPageId(  ) );
 
-        Iterator i = linkPagesList.iterator(  );
+        Iterator<Page> i = linkPagesList.iterator(  );
 
         while ( i.hasNext(  ) )
         {
-            Page linkPage = (Page) i.next(  );
+            Page linkPage = i.next(  );
 
-            // Checking duplicate
             if ( !LinkPagesPortletHome.testDuplicate( nPortletId, linkPage.getId(  ) ) )
             {
                 LinkPagesPortletHome.insertLinkPage( nPortletId, linkPage.getId(  ), nOrder );
@@ -464,5 +527,38 @@ public class LinkPagesPortletJspBean extends PortletJspBean
         }
 
         return JSP_DO_MODIFY_PORTLET + "?" + PARAMETER_PORTLET_ID + "=" + nPortletId;
+    }
+
+    /**
+     * Finds the portlet named by the request, without throwing on a bad identifier.
+     *
+     * PortletHome.findByPrimaryKey of the core dereferences the row it loaded without checking it exists, so an
+     * unknown identifier raises a NullPointerException there rather than returning null.
+     *
+     * @param request the HTTP request
+     * @return the portlet, null when the identifier is missing, malformed or unknown
+     */
+    private LinkPagesPortlet findPortlet( HttpServletRequest request )
+    {
+        String strIdPortlet = request.getParameter( PARAMETER_PORTLET_ID );
+
+        if ( StringUtils.isEmpty( strIdPortlet ) || !StringUtils.isNumeric( strIdPortlet ) )
+        {
+            return null;
+        }
+
+        Portlet portlet;
+
+        try
+        {
+            portlet = PortletHome.findByPrimaryKey( Integer.parseInt( strIdPortlet ) );
+        }
+        catch( NullPointerException e )
+        {
+            AppLogService.info( "Unknown portlet {}", strIdPortlet );
+            return null;
+        }
+
+        return portlet instanceof LinkPagesPortlet ? (LinkPagesPortlet) portlet : null;
     }
 }

@@ -38,15 +38,16 @@ import fr.paris.lutece.portal.business.portlet.Portlet;
 import fr.paris.lutece.portal.service.util.AppException;
 import fr.paris.lutece.util.ReferenceList;
 import fr.paris.lutece.util.sql.DAOUtil;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.ArrayList;
 import java.util.List;
 
-
 /**
- * This class provides Data Access methods for LinkPagesPortlet objects
+ * Provides data access for LinkPagesPortlet objects
  */
-public class LinkPagesPortletDAO implements ILinkPagesPortletDAO
+@ApplicationScoped
+public final class LinkPagesPortletDAO implements ILinkPagesPortletDAO
 {
     private static final String SQL_QUERY_SELECT_LINKPAGES_LIST = "SELECT id_page, name FROM core_page ORDER BY name";
     private static final String SQL_QUERY_SELECT_MAX_ORDER = "SELECT max( linkpage_order ) FROM linkpages_portlet WHERE id_portlet=?";
@@ -63,273 +64,289 @@ public class LinkPagesPortletDAO implements ILinkPagesPortletDAO
     private static final String SQL_QUERY_CHECK_DUPLICATE = "SELECT id_linkpage FROM linkpages_portlet WHERE  id_portlet = ? AND  id_linkpage = ?";
     private static final String SQL_QUERY_INSERT_LINKPAGE = "INSERT INTO linkpages_portlet ( id_portlet, id_linkpage, linkpage_order ) VALUES (?,?,?)";
 
-    ////////////////////////////////////////////////////////////////////////////
-    //Access methods to data
+    /**
+     * Inserts a portlet record
+     *
+     * @param portlet the portlet to insert
+     */
     public void insert( Portlet portlet )
     {
     }
 
     /**
-     * Deletes a record from the table
+     * Deletes a portlet record
      *
-     * @param nPortletId Identifier portlet
+     * @param nPortletId the portlet identifier
      */
     public void delete( int nPortletId )
     {
-        DAOUtil daoUtil = new DAOUtil( SQL_QUERY_DELETE );
-        daoUtil.setInt( 1, nPortletId );
-        daoUtil.executeUpdate(  );
-        daoUtil.free(  );
+        try ( DAOUtil daoUtil = new DAOUtil( SQL_QUERY_DELETE ) )
+        {
+            daoUtil.setInt( 1, nPortletId );
+            daoUtil.executeUpdate( );
+        }
     }
 
     /**
-     * Loads the data of a LinkdPagesPortlet whose identifier is specified in parameter from the table
+     * Loads a portlet by identifier
      *
-     * @param nPortletId The LinkdPagesPortlet identifier
-     * @return the LinkdPagesPortlet object
+     * @param nPortletId the portlet identifier
+     * @return the portlet object
      */
     public Portlet load( int nPortletId )
     {
-        DAOUtil daoUtil = new DAOUtil( SQL_QUERY_SELECT );
-        daoUtil.setInt( 1, nPortletId );
-        daoUtil.executeQuery(  );
+        LinkPagesPortlet portlet = new LinkPagesPortlet( );
 
-        LinkPagesPortlet portlet = new LinkPagesPortlet(  );
-
-        if ( daoUtil.next(  ) )
+        try ( DAOUtil daoUtil = new DAOUtil( SQL_QUERY_SELECT ) )
         {
-            portlet.setId( daoUtil.getInt( 1 ) );
-            portlet.setPageId( daoUtil.getInt( 2 ) );
-        }
+            daoUtil.setInt( 1, nPortletId );
+            daoUtil.executeQuery( );
 
-        daoUtil.free(  );
+            if ( daoUtil.next( ) )
+            {
+                portlet.setId( daoUtil.getInt( 1 ) );
+                portlet.setPageId( daoUtil.getInt( 2 ) );
+            }
+        }
 
         return portlet;
     }
 
+    /**
+     * Stores a portlet record
+     *
+     * @param portlet the portlet to store
+     * @throws AppException on storage error
+     */
     public void store( Portlet portlet ) throws AppException
     {
     }
 
     /**
-     * Load the list of all the pages of the website
+     * Loads all website pages
      *
-     * @return the list in form of a ReferenceList object
+     * @return the page list
      */
-    public ReferenceList selectLinkPagesList(  )
+    public ReferenceList selectLinkPagesList( )
     {
-        DAOUtil daoUtil = new DAOUtil( SQL_QUERY_SELECT_LINKPAGES_LIST );
-        daoUtil.executeQuery(  );
+        ReferenceList list = new ReferenceList( );
 
-        ReferenceList list = new ReferenceList(  );
-
-        while ( daoUtil.next(  ) )
+        try ( DAOUtil daoUtil = new DAOUtil( SQL_QUERY_SELECT_LINKPAGES_LIST ) )
         {
-            list.addItem( daoUtil.getInt( 1 ), daoUtil.getString( 2 ) );
-        }
+            daoUtil.executeQuery( );
 
-        daoUtil.free(  );
+            while ( daoUtil.next( ) )
+            {
+                list.addItem( daoUtil.getInt( 1 ), daoUtil.getString( 2 ) );
+            }
+        }
 
         return list;
     }
 
     /**
-     * Calculate a new primary key to add a new linkPage
+     * Loads the max order of a portlet
      *
-     * @param nPortletId The identifier of the portlet
-     * @return The new key.
+     * @param nPortletId the portlet identifier
+     * @return the max order
      */
     public int selectMaxOrder( int nPortletId )
     {
         int nOrder = 0;
-        DAOUtil daoUtil = new DAOUtil( SQL_QUERY_SELECT_MAX_ORDER );
-        daoUtil.setInt( 1, nPortletId );
-        daoUtil.executeQuery(  );
 
-        if ( daoUtil.next(  ) )
+        try ( DAOUtil daoUtil = new DAOUtil( SQL_QUERY_SELECT_MAX_ORDER ) )
         {
-            nOrder = daoUtil.getInt( 1 );
-        }
+            daoUtil.setInt( 1, nPortletId );
+            daoUtil.executeQuery( );
 
-        daoUtil.free(  );
+            if ( daoUtil.next( ) )
+            {
+                nOrder = daoUtil.getInt( 1 );
+            }
+        }
 
         return nOrder;
     }
 
     /**
-     * Return a list of linkpages which belong to a specified portlet
+     * Loads the link pages of a portlet
      *
-     * @param nPortletId The identifier of the portlet
-     * @return A list of linkpages objects
+     * @param nPortletId the portlet identifier
+     * @return the page list
      */
     public List<Page> selectLinkPagesInPortletList( int nPortletId )
     {
-        DAOUtil daoUtil = new DAOUtil( SQL_QUERY_SELECT_LINKPAGE_IN_PORTLET );
-        daoUtil.setInt( 1, nPortletId );
-        daoUtil.executeQuery(  );
+        List<Page> list = new ArrayList<>( );
 
-        List<Page> list = new ArrayList<Page>(  );
-
-        while ( daoUtil.next(  ) )
+        try ( DAOUtil daoUtil = new DAOUtil( SQL_QUERY_SELECT_LINKPAGE_IN_PORTLET ) )
         {
-            Page page = new Page(  );
-            page.setId( daoUtil.getInt( 1 ) );
-            page.setName( daoUtil.getString( 2 ) );
-            page.setDescription( daoUtil.getString( 3 ) );
-            page.setOrder( daoUtil.getInt( 4 ) );
-            page.setStatus( daoUtil.getInt( 5 ) );
-            page.setRole( daoUtil.getString( 6 ) );
-            page.setCodeTheme( daoUtil.getString( 7 ) );
-            page.setImageContent( daoUtil.getBytes( 8 ) );
-            list.add( page );
-        }
+            daoUtil.setInt( 1, nPortletId );
+            daoUtil.executeQuery( );
 
-        daoUtil.free(  );
+            while ( daoUtil.next( ) )
+            {
+                Page page = new Page( );
+                page.setId( daoUtil.getInt( 1 ) );
+                page.setName( daoUtil.getString( 2 ) );
+                page.setDescription( daoUtil.getString( 3 ) );
+                page.setOrder( daoUtil.getInt( 4 ) );
+                page.setStatus( daoUtil.getInt( 5 ) );
+                page.setRole( daoUtil.getString( 6 ) );
+                page.setCodeTheme( daoUtil.getString( 7 ) );
+                page.setImageContent( daoUtil.getBytes( 8 ) );
+                list.add( page );
+            }
+        }
 
         return list;
     }
 
     /**
-     * Return the order of a link page in a specified portlet
+     * Loads the order of a link page in a portlet
      *
-     * @param nPortletId The identifier of the portlet to check
-     * @param nPageId The identifier of the page
-     * @return The order of the page in the portlet
+     * @param nPortletId the portlet identifier
+     * @param nPageId the page identifier
+     * @return the page order
      */
     public int selectLinkPageOrder( int nPortletId, int nPageId )
     {
         int nOrder = 0;
-        DAOUtil daoUtil = new DAOUtil( SQL_QUERY_SELECT_LINKPAGE_ORDER );
-        daoUtil.setInt( 1, nPortletId );
-        daoUtil.setInt( 2, nPageId );
-        daoUtil.executeQuery(  );
 
-        if ( daoUtil.next(  ) )
+        try ( DAOUtil daoUtil = new DAOUtil( SQL_QUERY_SELECT_LINKPAGE_ORDER ) )
         {
-            nOrder = daoUtil.getInt( 1 );
-        }
+            daoUtil.setInt( 1, nPortletId );
+            daoUtil.setInt( 2, nPageId );
+            daoUtil.executeQuery( );
 
-        daoUtil.free(  );
+            if ( daoUtil.next( ) )
+            {
+                nOrder = daoUtil.getInt( 1 );
+            }
+        }
 
         return nOrder;
     }
 
     /**
-     * Returns the id of a link page wich has a specified order in a specified portlet
+     * Loads a link page identifier by order
      *
-     * @param nPortletId The identifier of the portlet
-     * @param nOrder The link page's order
-     * @return The identifier of the link page
+     * @param nPortletId the portlet identifier
+     * @param nOrder the page order
+     * @return the page identifier
      */
     public int selectLinkPageIdByOrder( int nPortletId, int nOrder )
     {
-        DAOUtil daoUtil = new DAOUtil( SQL_QUERY_SELECT_LINKPAGE_ID_BY_ORDER );
-        daoUtil.setInt( 1, nPortletId );
-        daoUtil.setInt( 2, nOrder );
-        daoUtil.executeQuery(  );
-
-        if ( !daoUtil.next(  ) )
+        try ( DAOUtil daoUtil = new DAOUtil( SQL_QUERY_SELECT_LINKPAGE_ID_BY_ORDER ) )
         {
-            throw new AppException( DAOUtil.MSG_EXCEPTION_SELECT_ERROR + "(PortletId = " + nPortletId + "; Order = " +
-                nOrder + ")" );
+            daoUtil.setInt( 1, nPortletId );
+            daoUtil.setInt( 2, nOrder );
+            daoUtil.executeQuery( );
+
+            if ( !daoUtil.next( ) )
+            {
+                throw new AppException( DAOUtil.MSG_EXCEPTION_SELECT_ERROR + "(PortletId = " + nPortletId + "; Order = " +
+                    nOrder + ")" );
+            }
+
+            return daoUtil.getInt( 1 );
         }
-
-        int nId = daoUtil.getInt( 1 );
-        daoUtil.free(  );
-
-        return nId;
     }
 
     /**
-     * Update the order of a specified link page in a specified portlet
+     * Updates the order of a link page
      *
-     * @param nPortletId The identifier of the portlet
-     * @param nLinkPageId The identifier of the link page
-     * @param nOrder The new order
+     * @param nOrder the new order
+     * @param nPortletId the portlet identifier
+     * @param nLinkPageId the link page identifier
      */
     public void storeLinkPageOrder( int nOrder, int nPortletId, int nLinkPageId )
     {
-        DAOUtil daoUtil = new DAOUtil( SQL_QUERY_UPDATE_LINKPAGE_ORDER );
-        daoUtil.setInt( 1, nOrder );
-        daoUtil.setInt( 2, nPortletId );
-        daoUtil.setInt( 3, nLinkPageId );
-        daoUtil.executeUpdate(  );
-        daoUtil.free(  );
+        try ( DAOUtil daoUtil = new DAOUtil( SQL_QUERY_UPDATE_LINKPAGE_ORDER ) )
+        {
+            daoUtil.setInt( 1, nOrder );
+            daoUtil.setInt( 2, nPortletId );
+            daoUtil.setInt( 3, nLinkPageId );
+            daoUtil.executeUpdate( );
+        }
     }
 
     /**
-     * Remove a specified link page from a specified portlet
+     * Removes a link page from a portlet
      *
-     * @param nPortletId The identifier of the portlet
-     * @param nLinkPageId The identifier of the link page
+     * @param nPortletId the portlet identifier
+     * @param nLinkPageId the link page identifier
      */
     public void deleteLinkPage( int nPortletId, int nLinkPageId )
     {
         if ( ( nLinkPageId != 0 ) )
         {
-            DAOUtil daoUtil = new DAOUtil( SQL_QUERY_DELETE_LINKPAGE );
-            daoUtil.setInt( 1, nPortletId );
-            daoUtil.setInt( 2, nLinkPageId );
-            daoUtil.executeUpdate(  );
-            daoUtil.free(  );
+            try ( DAOUtil daoUtil = new DAOUtil( SQL_QUERY_DELETE_LINKPAGE ) )
+            {
+                daoUtil.setInt( 1, nPortletId );
+                daoUtil.setInt( 2, nLinkPageId );
+                daoUtil.executeUpdate( );
+            }
         }
     }
 
     /**
-    * Remove all link pages from a specified portlet
-    *
-    * @param nPortletId The identifier of the portlet
-    */
+     * Removes all link pages from a portlet
+     *
+     * @param nPortletId the portlet identifier
+     */
     public void deleteAllLinkPages( int nPortletId )
     {
-        DAOUtil daoUtil = new DAOUtil( SQL_QUERY_DELETE_LINKPAGE_ALL );
-        daoUtil.setInt( 1, nPortletId );
-        daoUtil.executeUpdate(  );
-        daoUtil.free(  );
+        try ( DAOUtil daoUtil = new DAOUtil( SQL_QUERY_DELETE_LINKPAGE_ALL ) )
+        {
+            daoUtil.setInt( 1, nPortletId );
+            daoUtil.executeUpdate( );
+        }
     }
 
     /**
-     * Check if a specified link page is not already registered in a specified portlet
+     * Checks a link page duplicate in a portlet
      *
-     * @param nPortletId The identifier of the portlet
-     * @param nLinkPageId The identifier of the link page
-     * @return The result(boolean)
+     * @param nPortletId the portlet identifier
+     * @param nLinkPageId the link page identifier
+     * @return true when already registered
      */
     public boolean testDuplicate( int nPortletId, int nLinkPageId )
     {
         boolean bDuplicate = false;
-        DAOUtil daoUtil = new DAOUtil( SQL_QUERY_CHECK_DUPLICATE );
-        daoUtil.setInt( 1, nPortletId );
-        daoUtil.setInt( 2, nLinkPageId );
-        daoUtil.executeQuery(  );
 
-        if ( daoUtil.next(  ) )
+        try ( DAOUtil daoUtil = new DAOUtil( SQL_QUERY_CHECK_DUPLICATE ) )
         {
-            bDuplicate = true;
-        }
+            daoUtil.setInt( 1, nPortletId );
+            daoUtil.setInt( 2, nLinkPageId );
+            daoUtil.executeQuery( );
 
-        daoUtil.free(  );
+            if ( daoUtil.next( ) )
+            {
+                bDuplicate = true;
+            }
+        }
 
         return bDuplicate;
     }
 
     /**
-     * Insert a new record in the table.
+     * Inserts a link page in a portlet
      *
-     * @param nPortletId The identifier of the portlet
-     * @param nLinkPageId The identifier of the link page
-     * @param nOrder The order of the portlet to insert
+     * @param nPortletId the portlet identifier
+     * @param nLinkPageId the link page identifier
+     * @param nOrder the page order
      */
     public void insertLinkPage( int nPortletId, int nLinkPageId, int nOrder )
     {
         if ( ( nLinkPageId != 0 ) )
         {
-            DAOUtil daoUtil = new DAOUtil( SQL_QUERY_INSERT_LINKPAGE );
-            daoUtil.setInt( 1, nPortletId );
-            daoUtil.setInt( 2, nLinkPageId );
-            daoUtil.setInt( 3, nOrder );
-            daoUtil.executeUpdate(  );
-            daoUtil.free(  );
+            try ( DAOUtil daoUtil = new DAOUtil( SQL_QUERY_INSERT_LINKPAGE ) )
+            {
+                daoUtil.setInt( 1, nPortletId );
+                daoUtil.setInt( 2, nLinkPageId );
+                daoUtil.setInt( 3, nOrder );
+                daoUtil.executeUpdate( );
+            }
         }
     }
 }

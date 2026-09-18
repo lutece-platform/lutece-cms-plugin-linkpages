@@ -1,0 +1,19 @@
+<div class="portlet -lutece-border-radius append-bottom">
+	<#if portlet.displayPortletTitle != 1>
+		<h3 class="portlet-header">${portlet.name}</h3>
+		<br />
+	</#if>
+	<div class="portlet-content">
+		<ul>
+			<#list link_pages as link_page>
+				<li>
+					<#if link_page.imageUrl??>
+						<div class="img-polaroid span3"><img src="${link_page.imageUrl}" alt="${link_page.name}" /></div>
+					</#if>
+					<a href="${site_path}?page_id=${link_page.id}" target="_top"><b>${link_page.name}</b></a><br />
+					${link_page.description!}<br />
+				</li>
+			</#list>
+		</ul>
+	</div>
+</div>

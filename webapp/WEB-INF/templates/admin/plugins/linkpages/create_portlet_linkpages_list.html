@@ -1,6 +1,7 @@
 <@row>
 	<@columns>
 		<@input type='hidden' name='page_id' value='${page_id!}' />
+		<@input type='hidden' name='token' value='${token}' />
 		<@formGroup labelFor='linkpage' labelKey='#i18n{linkpages.modify_portlet_linkpages_list.linkpageInsertNewPage}' mandatory=true>
 			<@select name='linkpage' default_value='1' items=combo_linkpages />
 		</@formGroup>

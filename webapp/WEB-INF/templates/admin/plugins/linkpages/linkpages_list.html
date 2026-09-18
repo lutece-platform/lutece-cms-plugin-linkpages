@@ -1,1 +1,19 @@
-<@tr>	<@tform method='post' type='inline' action ='jsp/admin/plugins/linkpages/DoModifyOrderLinkPage.jsp'>		<@input type='hidden' name='portlet_id' value='${portlet_id}' />		<@input type='hidden' name='page_id' value='${linkpage_id}' />		<@input type='hidden' name='new_linkpage' value='${new_linkpage}' />		<@td>${linkpage_name}</@td>		<@td>${linkpage_description}</@td>		<@td md=2>			<@inputGroup>				<@select name='linkpage_order' default_value='${linkpage_order}' items=combo_linkpages_order />				<@button type='submit' title='#i18n{portal.util.labelModify}' buttonIcon='check' />			</@inputGroup>		</@td>		<@td md=2>			<@aButton href='jsp/admin/plugins/linkpages/DoUnselectLinkPage.jsp?portlet_id=${portlet_id}&page_id=${linkpage_id}' buttonIcon='trash' color='danger' size='' />		</@td>	</@tform></@tr>
+<@tr>
+	<@td>${linkpage_name!}</@td>
+	<@td>${linkpage_description!}</@td>
+	<@td md=2>
+		<@tform method='post' type='inline' action='jsp/admin/plugins/linkpages/DoModifyOrderLinkPage.jsp'>
+			<@input type='hidden' name='portlet_id' value='${portlet_id!}' />
+			<@input type='hidden' name='page_id' value='${linkpage_id!}' />
+			<@input type='hidden' name='new_linkpage' value='${new_linkpage!}' />
+			<@input type='hidden' name='token' value='${token_order}' />
+			<@inputGroup>
+				<@select name='linkpage_order' default_value='${linkpage_order!}' items=combo_linkpages_order />
+				<@button type='submit' title='#i18n{portal.util.labelModify}' buttonIcon='check' />
+			</@inputGroup>
+		</@tform>
+	</@td>
+	<@td md=2>
+		<@aButton href='jsp/admin/plugins/linkpages/DoUnselectLinkPage.jsp?portlet_id=${portlet_id!}&page_id=${linkpage_id!}&token=${token_unselect}' buttonIcon='trash' color='danger' size='' />
+	</@td>
+</@tr>

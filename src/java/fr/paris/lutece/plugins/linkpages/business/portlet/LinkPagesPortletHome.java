@@ -37,22 +37,19 @@ import fr.paris.lutece.portal.business.page.Page;
 import fr.paris.lutece.portal.business.portlet.IPortletInterfaceDAO;
 import fr.paris.lutece.portal.business.portlet.PortletHome;
 import fr.paris.lutece.portal.business.portlet.PortletTypeHome;
-import fr.paris.lutece.portal.service.spring.SpringContextService;
 import fr.paris.lutece.util.ReferenceList;
+import jakarta.enterprise.inject.spi.CDI;
 
 import java.util.List;
 
 
 /**
- * This class provides instances management methods for LinkPagesPortlet objects
+ * Provides instance management for LinkPagesPortlet objects
  */
 public class LinkPagesPortletHome extends PortletHome
 {
-    // Static variable pointed at the DAO instance
-    private static ILinkPagesPortletDAO _dao = (ILinkPagesPortletDAO) SpringContextService.getPluginBean( "linkpages",
-            "linkPagesPortletDAO" );
+    private static ILinkPagesPortletDAO _dao = CDI.current( ).select( ILinkPagesPortletDAO.class ).get( );
 
-    /** This class implements the Singleton design pattern. */
     private static LinkPagesPortletHome _singleton = null;
 
     /**
@@ -182,8 +179,6 @@ public class LinkPagesPortletHome extends PortletHome
     public static void removeLinkPage( int nPortletId, int nLinkPageId )
     {
         _dao.deleteLinkPage( nPortletId, nLinkPageId );
-
-        // Invalidate portlet
         invalidate( nPortletId );
     }
 
@@ -195,8 +190,6 @@ public class LinkPagesPortletHome extends PortletHome
     public static void removeAllLinkPages( int nPortletId )
     {
         _dao.deleteAllLinkPages( nPortletId );
-
-        // Invalidate portlet
         invalidate( nPortletId );
     }
 
@@ -222,8 +215,6 @@ public class LinkPagesPortletHome extends PortletHome
     public static void insertLinkPage( int nPortletId, int nLinkPageId, int nOrder )
     {
         _dao.insertLinkPage( nPortletId, nLinkPageId, nOrder );
-
-        // Invalidate portlet
         invalidate( nPortletId );
     }
 }

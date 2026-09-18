@@ -34,28 +34,28 @@
 package fr.paris.lutece.plugins.linkpages.business.portlet;
 
 import fr.paris.lutece.portal.business.page.Page;
-import fr.paris.lutece.portal.business.portlet.Portlet;
+import fr.paris.lutece.portal.business.portlet.PortletHtmlContent;
+import fr.paris.lutece.portal.service.template.AppTemplateService;
+import fr.paris.lutece.portal.service.util.AppPathService;
 import fr.paris.lutece.portal.web.admin.AdminPageJspBean;
-import fr.paris.lutece.util.xml.XmlUtil;
 
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 
 /**
  * This class represents business objects LinkPagesPortlet
  */
-public class LinkPagesPortlet extends Portlet
+public class LinkPagesPortlet extends PortletHtmlContent
 {
-    /////////////////////////////////////////////////////////////////////////////////
-    // Xml Tags
-    public static final String TAG_LINK_PAGE = "link-page";
-    public static final String TAG_LINK_PAGE_ID = "link-page-id";
-    public static final String TAG_LINK_PAGE_NAME = "link-page-name";
-    public static final String TAG_LINK_PAGE_DESCRIPTION = "link-page-description";
-    public static final String TAG_LINK_PAGE_IMAGE = "link-page-image";
-    public static final String TAG_LINK_PAGES_PORTLET_LIST = "link-pages-portlet";
+    private static final String TEMPLATE_PORTLET = "skin/plugins/linkpages/portlet/linkpages_portlet.html";
+    private static final String MARK_PORTLET = "portlet";
+    private static final String MARK_LINK_PAGES = "link_pages";
+    private static final String MARK_SITE_PATH = "site_path";
 
     /**
      * Sets the identifier of the portlet type to the value specified in the LinkPagesPortletHome class
@@ -66,61 +66,58 @@ public class LinkPagesPortlet extends Portlet
     }
 
     /**
-     * Returns the Xml code of the Linkpages portlet without XML heading
+     * Returns the HTML content of the portlet
      *
-     * @param request The HTTP Servlet Request
-     * @return the Xml code of the Linkpages portlet content
+     * @param request the HTTP request
+     * @return the rendered portlet
      */
-    public String getXml( HttpServletRequest request )
+    @Override
+    public String getHtmlContent( HttpServletRequest request )
     {
-        StringBuffer strXml = new StringBuffer(  );
-        XmlUtil.beginElement( strXml, TAG_LINK_PAGES_PORTLET_LIST );
+        Map<String, Object> model = new HashMap<>( );
+        model.put( MARK_PORTLET, this );
+        model.put( MARK_SITE_PATH, AppPathService.getPortalUrl( ) );
+        model.put( MARK_LINK_PAGES, getVisibleLinkPages( request ) );
 
-        Iterator i = LinkPagesPortletHome.getLinkPagesInPortletList( getId(  ) ).iterator(  );
-
-        while ( i.hasNext(  ) )
-        {
-            Page page = (Page) i.next(  );
-
-            if ( page.isVisible( request ) )
-            {
-                XmlUtil.beginElement( strXml, TAG_LINK_PAGE );
-                XmlUtil.addElement( strXml, TAG_LINK_PAGE_ID, page.getId(  ) );
-                XmlUtil.addElement( strXml, TAG_LINK_PAGE_NAME, page.getName(  ) );
-                XmlUtil.addElement( strXml, TAG_LINK_PAGE_DESCRIPTION, page.getDescription(  ) );
-
-                AdminPageJspBean adminPage = new AdminPageJspBean(  );
-
-                if ( page.getImageContent(  ) != null )
-                {
-                    int nImageLength = page.getImageContent(  ).length;
-
-                    if ( nImageLength >= 1 )
-                    {
-                        String strPageId = new Integer( page.getId(  ) ).toString(  );
-                        XmlUtil.addElement( strXml, TAG_LINK_PAGE_IMAGE,
-                            adminPage.getResourceImagePage( page, strPageId ) );
-                    }
-                }
-
-                XmlUtil.endElement( strXml, TAG_LINK_PAGE );
-            }
-        }
-
-        XmlUtil.endElement( strXml, TAG_LINK_PAGES_PORTLET_LIST );
-
-        return addPortletTags( strXml );
+        return AppTemplateService.getTemplate( TEMPLATE_PORTLET, request != null ? request.getLocale( ) : null, model )
+                .getHtml( );
     }
 
     /**
-    * Returns the Xml code of the LinkPage portlet with XML heading
-    *
-    * @param request The HTTP Servlet Request
-    * @return the Xml code of the LinkPage portlet
-    */
-    public String getXmlDocument( HttpServletRequest request )
+     * Collects the linked pages visible to the current user
+     *
+     * @param request the HTTP request
+     * @return the visible pages, with their image URL when they have one
+     */
+    private List<LinkPageItem> getVisibleLinkPages( HttpServletRequest request )
     {
-        return XmlUtil.getXmlHeader(  ) + getXml( request );
+        List<LinkPageItem> items = new ArrayList<>( );
+
+        if ( request == null )
+        {
+            return items;
+        }
+
+        AdminPageJspBean adminPage = new AdminPageJspBean( );
+
+        for ( Page page : LinkPagesPortletHome.getLinkPagesInPortletList( getId( ) ) )
+        {
+            if ( !page.isVisible( request ) )
+            {
+                continue;
+            }
+
+            String strImageUrl = null;
+
+            if ( page.getImageContent( ) != null && page.getImageContent( ).length >= 1 )
+            {
+                strImageUrl = adminPage.getResourceImagePage( page, Integer.toString( page.getId( ) ) );
+            }
+
+            items.add( new LinkPageItem( page, strImageUrl ) );
+        }
+
+        return items;
     }
 
     /**
@@ -137,5 +134,66 @@ public class LinkPagesPortlet extends Portlet
     public void remove(  )
     {
         LinkPagesPortletHome.getInstance(  ).remove( this );
+    }
+
+    /**
+     * A linked page as the template consumes it
+     */
+    public static final class LinkPageItem
+    {
+        private final Page _page;
+        private final String _strImageUrl;
+
+        /**
+         * Builds an item
+         *
+         * @param page the page
+         * @param strImageUrl the image URL, null when the page has no image
+         */
+        LinkPageItem( Page page, String strImageUrl )
+        {
+            _page = page;
+            _strImageUrl = strImageUrl;
+        }
+
+        /**
+         * Returns the page identifier
+         *
+         * @return the page identifier
+         */
+        public int getId( )
+        {
+            return _page.getId( );
+        }
+
+        /**
+         * Returns the page name
+         *
+         * @return the page name
+         */
+        public String getName( )
+        {
+            return _page.getName( );
+        }
+
+        /**
+         * Returns the page description
+         *
+         * @return the page description
+         */
+        public String getDescription( )
+        {
+            return _page.getDescription( );
+        }
+
+        /**
+         * Returns the image URL
+         *
+         * @return the image URL, null when the page has no image
+         */
+        public String getImageUrl( )
+        {
+            return _strImageUrl;
+        }
     }
 }

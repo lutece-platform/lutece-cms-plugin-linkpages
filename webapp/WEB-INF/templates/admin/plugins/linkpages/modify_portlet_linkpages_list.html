@@ -1,1 +1,36 @@
-</form><@row>	<@columns>		<@box>			<@boxHeader title='#i18n{linkpages.modify_portlet_linkpages_list.linkpageInsertNewPage}'>				<@tform method='post' type='inline' action='jsp/admin/plugins/linkpages/DoSelectLinkPage.jsp'>					<@input type='hidden' name='page_id' value='${page_id!}' />					<@input type='hidden' name='portlet_id' value='${portlet_id!}' />					<@formGroup labelFor='linkpage' labelKey='Page'>						<@select name='linkpage' default_value='1' items=combo_linkpages />					</@formGroup>					<@formGroup labelFor='linkpage_order' labelKey='Rang'>						<@inputGroup>							<@select name='linkpage_order' default_value='${linkpage_order}' items=combo_linkpages_order />							<@button type='submit"' title='#i18n{portal.util.labelCreate}' buttonIcon='plus-circle' />						</@inputGroup>					</@formGroup>				</@tform>			</@boxHeader>			<@boxBody class='p-3'>				<h3>#i18n{linkpages.modify_portlet_linkpages_list.pageTitle}</h3>				<@table>					<@tr>						<@th>Nom</@th>						<@th>Description</@th>						<@th>Rang</@th>						<@th>Actions</@th>					</@tr>					<!-- inserting the linkpages list -->					${linkpages_list}				</@table>			</@boxBody>		</@box>	</@columns></@row>
+<@input type='hidden' name='token' value='${token}' />
+</form>
+<@row>
+	<@columns>
+		<@box>
+			<@boxHeader title='#i18n{linkpages.modify_portlet_linkpages_list.linkpageInsertNewPage}'>
+				<@tform method='post' type='inline' action='jsp/admin/plugins/linkpages/DoSelectLinkPage.jsp'>
+					<@input type='hidden' name='page_id' value='${page_id!}' />
+					<@input type='hidden' name='portlet_id' value='${portlet_id!}' />
+					<@input type='hidden' name='token' value='${token_select}' />
+					<@formGroup labelFor='linkpage' labelKey='#i18n{linkpages.modify_portlet_linkpages_list.rowTitleLabel}'>
+						<@select name='linkpage' default_value='1' items=combo_linkpages />
+					</@formGroup>
+					<@formGroup labelFor='linkpage_order' labelKey='#i18n{linkpages.modify_portlet_linkpages_list.rowTitleRank}'>
+						<@inputGroup>
+							<@select name='linkpage_order' default_value='${linkpage_order!}' items=combo_linkpages_order />
+							<@button type='submit' title='#i18n{portal.util.labelCreate}' buttonIcon='plus-circle' />
+						</@inputGroup>
+					</@formGroup>
+				</@tform>
+			</@boxHeader>
+			<@boxBody class='p-3'>
+				<h3>#i18n{linkpages.modify_portlet_linkpages_list.pageTitle}</h3>
+				<@table>
+					<@tr>
+						<@th>#i18n{linkpages.modify_portlet_linkpages_list.rowTitleLabel}</@th>
+						<@th>#i18n{linkpages.modify_portlet_linkpages_list.rowTitleDescription}</@th>
+						<@th>#i18n{linkpages.modify_portlet_linkpages_list.rowTitleRank}</@th>
+						<@th>#i18n{linkpages.modify_portlet_linkpages_list.rowTitleActions}</@th>
+					</@tr>
+					${linkpages_list}
+				</@table>
+			</@boxBody>
+		</@box>
+	</@columns>
+</@row>
