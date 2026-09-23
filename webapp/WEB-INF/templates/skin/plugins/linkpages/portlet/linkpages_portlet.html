@@ -1,19 +1,22 @@
-<div class="portlet -lutece-border-radius append-bottom">
+<@cTpl>
+<@cSection type='div' class='portlet portlet-linkpages' id='portlet_${portlet.id}'>
 	<#if portlet.displayPortletTitle != 1>
-		<h3 class="portlet-header">${portlet.name}</h3>
-		<br />
+		<@cTitle level=2 class='portlet-header'>${portlet.name}</@cTitle>
 	</#if>
-	<div class="portlet-content">
-		<ul>
+	<@cBlock class='portlet-content'>
+		<@chList>
 			<#list link_pages as link_page>
-				<li>
+				<@chItem>
 					<#if link_page.imageUrl??>
-						<div class="img-polaroid span3"><img src="${link_page.imageUrl}" alt="${link_page.name}" /></div>
+						<@cImg src=link_page.imageUrl alt='' class='img-fluid' />
 					</#if>
-					<a href="${site_path}?page_id=${link_page.id}" target="_top"><b>${link_page.name}</b></a><br />
-					${link_page.description!}<br />
-				</li>
+					<@cLink href='${site_path}?page_id=${link_page.id}' label=link_page.name target='_top' />
+					<#if link_page.description?has_content>
+						<@cText>${link_page.description}</@cText>
+					</#if>
+				</@chItem>
 			</#list>
-		</ul>
-	</div>
-</div>
+		</@chList>
+	</@cBlock>
+</@cSection>
+</@cTpl>

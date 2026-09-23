@@ -36,7 +36,6 @@ package fr.paris.lutece.plugins.linkpages.web.portlet;
 import fr.paris.lutece.plugins.linkpages.business.portlet.LinkPagesPortlet;
 import fr.paris.lutece.plugins.linkpages.business.portlet.LinkPagesPortletHome;
 import fr.paris.lutece.portal.business.page.Page;
-import fr.paris.lutece.portal.business.page.PageHome;
 import fr.paris.lutece.portal.business.portlet.Portlet;
 import fr.paris.lutece.portal.business.portlet.PortletHome;
 import fr.paris.lutece.portal.business.portlet.PortletTypeHome;
@@ -57,9 +56,7 @@ import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -80,7 +77,6 @@ public class LinkPagesPortletJspBean extends PortletJspBean
     private final static String MARK_LINKPAGE_ID = "linkpage_id";
     private final static String MARK_LINKPAGE_NAME = "linkpage_name";
     private final static String MARK_LINKPAGE_DESCRIPTION = "linkpage_description";
-    private final static String MARK_NEW_LINKPAGE = "new_linkpage";
     private static final String MARK_PORTLET_ID = "portlet_id";
     private static final String MESSAGE_PORTLET_TYPE_NOT_FOUND = "linkpages.message.portletTypeNotFound";
     private static final String MESSAGE_PORTLET_NOT_FOUND = "linkpages.message.portletNotFound";
@@ -94,7 +90,6 @@ public class LinkPagesPortletJspBean extends PortletJspBean
     private static final String MARK_TOKEN_ORDER = "token_order";
     private static final String MARK_TOKEN_UNSELECT = "token_unselect";
     private static final String MARK_LINKPAGES_LIST = "linkpages_list";
-    private static final String MARK_PAGE_ID = "page_id";
 
     private static final String PARAMETER_LINKPAGE = "linkpage";
     private static final String PARAMETER_LINKPAGE_ORDER = "linkpage_order";
@@ -175,14 +170,11 @@ public class LinkPagesPortletJspBean extends PortletJspBean
             return I18nService.getLocalizedString( MESSAGE_PORTLET_NOT_FOUND, getLocale( ) );
         }
 
-        String strIdPortlet = request.getParameter( PARAMETER_PORTLET_ID );
         int nIdPortlet = portlet.getId( );
-        int nPageId = portlet.getPageId(  );
 
         HashMap<String, Object> model = new HashMap<>(  );
         model.put( MARK_LINKPAGES_LIST, getLinkPagesInPortletList( request, nIdPortlet ) );
-        model.put( MARK_PORTLET_ID, strIdPortlet );
-        model.put( MARK_PAGE_ID, nPageId );
+        model.put( MARK_PORTLET_ID, nIdPortlet );
 
         int nMax = LinkPagesPortletHome.getMaxOrder( nIdPortlet );
         nMax = nMax + 1;
@@ -230,6 +222,13 @@ public class LinkPagesPortletJspBean extends PortletJspBean
             return AdminMessageService.getMessageUrl( request, Messages.MANDATORY_FIELDS, AdminMessage.TYPE_STOP );
         }
 
+        String strLinkPageId = request.getParameter( PARAMETER_LINKPAGE );
+
+        if ( StringUtils.isEmpty( strLinkPageId ) || !StringUtils.isNumeric( strLinkPageId ) )
+        {
+            return AdminMessageService.getMessageUrl( request, MESSAGE_LINKPAGE_NOT_EXIST, AdminMessage.TYPE_ERROR );
+        }
+
         LinkPagesPortlet portlet = new LinkPagesPortlet(  );
         int nIdPage = Integer.parseInt( strIdPage );
 
@@ -244,16 +243,7 @@ public class LinkPagesPortletJspBean extends PortletJspBean
 
         LinkPagesPortletHome.getInstance(  ).create( portlet );
 
-        String strLinkPageId = request.getParameter( PARAMETER_LINKPAGE );
-
-        if ( ( strLinkPageId == null ) )
-        {
-            return AdminMessageService.getMessageUrl( request, MESSAGE_LINKPAGE_NOT_EXIST, AdminMessage.TYPE_ERROR );
-        }
-
-        int nLinkPageId = Integer.parseInt( strLinkPageId );
-
-        LinkPagesPortletHome.insertLinkPage( portlet.getId(), nLinkPageId, 1 );
+        LinkPagesPortletHome.insertLinkPage( portlet.getId(), Integer.parseInt( strLinkPageId ), 1 );
 
         return JSP_DO_MODIFY_PORTLET + "?" + PARAMETER_PORTLET_ID + "=" + portlet.getId();
     }
@@ -330,7 +320,6 @@ public class LinkPagesPortletJspBean extends PortletJspBean
                 model.put( MARK_LINKPAGE_ID, page.getId(  ) );
                 model.put( MARK_LINKPAGE_NAME, page.getName(  ) );
                 model.put( MARK_LINKPAGE_DESCRIPTION, page.getDescription(  ) );
-                model.put( MARK_NEW_LINKPAGE, "0" );
                 model.put( MARK_COMBO_LINKPAGES_ORDER, getOrdersList( nPortletId ) );
                 model.put( MARK_PORTLET_ID, nPortletId );
                 model.put( MARK_TOKEN_ORDER, getSecurityTokenService( ).getToken( request, ACTION_MODIFY_ORDER ) );
@@ -381,8 +370,9 @@ public class LinkPagesPortletJspBean extends PortletJspBean
 
         String strPortletId = request.getParameter( PARAMETER_PORTLET_ID );
         String strLinkPageId = request.getParameter( PARAMETER_PAGE_ID );
+        String strOrder = request.getParameter( PARAMETER_LINKPAGE_ORDER );
 
-        if ( !StringUtils.isNumeric( strPortletId ) || !StringUtils.isNumeric( strLinkPageId ) )
+        if ( !isNumber( strPortletId ) || !isNumber( strLinkPageId ) || !isNumber( strOrder ) )
         {
             return AdminMessageService.getMessageUrl( request, Messages.MANDATORY_FIELDS, AdminMessage.TYPE_STOP );
         }
@@ -390,8 +380,12 @@ public class LinkPagesPortletJspBean extends PortletJspBean
         int nPortletId = Integer.parseInt( strPortletId );
         int nLinkPageId = Integer.parseInt( strLinkPageId );
         int nOldOrder = LinkPagesPortletHome.getLinkPageOrder( nPortletId, nLinkPageId );
-        String strOrder = request.getParameter( PARAMETER_LINKPAGE_ORDER );
         int nOrder = Integer.parseInt( strOrder );
+
+        if ( nOrder < 1 || nOrder > LinkPagesPortletHome.getMaxOrder( nPortletId ) )
+        {
+            return AdminMessageService.getMessageUrl( request, Messages.MANDATORY_FIELDS, AdminMessage.TYPE_STOP );
+        }
 
         if ( nOrder < nOldOrder )
         {
@@ -431,8 +425,14 @@ public class LinkPagesPortletJspBean extends PortletJspBean
         }
 
         String strPortletId = request.getParameter( PARAMETER_PORTLET_ID );
-        int nPortletId = Integer.parseInt( strPortletId );
         String strLinkPageId = request.getParameter( PARAMETER_PAGE_ID );
+
+        if ( !isNumber( strPortletId ) || !isNumber( strLinkPageId ) )
+        {
+            return AdminMessageService.getMessageUrl( request, Messages.MANDATORY_FIELDS, AdminMessage.TYPE_STOP );
+        }
+
+        int nPortletId = Integer.parseInt( strPortletId );
         int nLinkPageId = Integer.parseInt( strLinkPageId );
         int nOrder = LinkPagesPortletHome.getLinkPageOrder( nPortletId, nLinkPageId );
         int nMax = LinkPagesPortletHome.getMaxOrder( nPortletId );
@@ -462,17 +462,21 @@ public class LinkPagesPortletJspBean extends PortletJspBean
         }
 
         String strPortletId = request.getParameter( PARAMETER_PORTLET_ID );
-        int nPortletId = Integer.parseInt( strPortletId );
         String strOrder = request.getParameter( PARAMETER_LINKPAGE_ORDER );
-        int nOrder = Integer.parseInt( strOrder );
-
         String strLinkPageId = request.getParameter( PARAMETER_LINKPAGE );
 
-        if ( ( strLinkPageId == null ) )
+        if ( !isNumber( strLinkPageId ) )
         {
             return AdminMessageService.getMessageUrl( request, MESSAGE_LINKPAGE_NOT_EXIST, AdminMessage.TYPE_ERROR );
         }
 
+        if ( !isNumber( strPortletId ) || !isNumber( strOrder ) )
+        {
+            return AdminMessageService.getMessageUrl( request, Messages.MANDATORY_FIELDS, AdminMessage.TYPE_STOP );
+        }
+
+        int nPortletId = Integer.parseInt( strPortletId );
+        int nOrder = Integer.parseInt( strOrder );
         int nLinkPageId = Integer.parseInt( strLinkPageId );
 
         if ( LinkPagesPortletHome.testDuplicate( nPortletId, nLinkPageId ) )
@@ -482,6 +486,11 @@ public class LinkPagesPortletJspBean extends PortletJspBean
         }
 
         int nMax = LinkPagesPortletHome.getMaxOrder( nPortletId );
+
+        if ( nOrder < 1 || nOrder > nMax + 1 )
+        {
+            return AdminMessageService.getMessageUrl( request, Messages.MANDATORY_FIELDS, AdminMessage.TYPE_STOP );
+        }
 
         for ( int i = nOrder; i < ( nMax + 1 ); i++ )
         {
@@ -495,38 +504,14 @@ public class LinkPagesPortletJspBean extends PortletJspBean
     }
 
     /**
-     * Process the selection of all link pages
+     * Tells whether a request parameter is a positive integer.
      *
-     * @param request request
-     * @return Portlet's modification url
+     * @param strValue the parameter value
+     * @return true when the value is made of digits only and fits an int
      */
-    public String doSelectAllLinkPage( HttpServletRequest request )
+    private static boolean isNumber( String strValue )
     {
-        String strPortletId = request.getParameter( PARAMETER_PORTLET_ID );
-        int nPortletId = Integer.parseInt( strPortletId );
-
-        LinkPagesPortlet portlet = (LinkPagesPortlet) PortletHome.findByPrimaryKey( nPortletId );
-
-        int nMax = LinkPagesPortletHome.getMaxOrder( nPortletId );
-
-        int nOrder = nMax + 1;
-
-        Collection<Page> linkPagesList = PageHome.getChildPages( portlet.getPageId(  ) );
-
-        Iterator<Page> i = linkPagesList.iterator(  );
-
-        while ( i.hasNext(  ) )
-        {
-            Page linkPage = i.next(  );
-
-            if ( !LinkPagesPortletHome.testDuplicate( nPortletId, linkPage.getId(  ) ) )
-            {
-                LinkPagesPortletHome.insertLinkPage( nPortletId, linkPage.getId(  ), nOrder );
-                nOrder++;
-            }
-        }
-
-        return JSP_DO_MODIFY_PORTLET + "?" + PARAMETER_PORTLET_ID + "=" + nPortletId;
+        return StringUtils.isNumeric( strValue ) && strValue.length( ) < 10;
     }
 
     /**
