@@ -492,7 +492,8 @@ public class LinkPagesPortletJspBean extends PortletJspBean
             return AdminMessageService.getMessageUrl( request, Messages.MANDATORY_FIELDS, AdminMessage.TYPE_STOP );
         }
 
-        for ( int i = nOrder; i < ( nMax + 1 ); i++ )
+        // shifts the following pages from the last one, so that a page is never moved onto the order of another
+        for ( int i = nMax; i >= nOrder; i-- )
         {
             int nLinkPageIdTemp = LinkPagesPortletHome.getLinkPageIdByOrder( nPortletId, i );
             LinkPagesPortletHome.updateLinkPageOrder( i + 1, nPortletId, nLinkPageIdTemp );
