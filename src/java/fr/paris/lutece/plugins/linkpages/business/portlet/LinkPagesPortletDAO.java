@@ -60,7 +60,7 @@ public final class LinkPagesPortletDAO implements ILinkPagesPortletDAO
     private static final String SQL_QUERY_SELECT_LINKPAGE_ID_BY_ORDER = "SELECT id_linkpage FROM linkpages_portlet WHERE id_portlet = ? AND linkpage_order = ?";
     private static final String SQL_QUERY_UPDATE_LINKPAGE_ORDER = "UPDATE linkpages_portlet SET linkpage_order = ? WHERE id_portlet = ? AND id_linkpage = ? ";
     private static final String SQL_QUERY_DELETE_LINKPAGE = "DELETE FROM linkpages_portlet WHERE id_portlet=? AND id_linkpage =?";
-    private static final String SQL_QUERY_DELETE_LINKPAGE_ALL = "DELETE FROM portlet_link_pages WHERE id_portlet=?";
+    private static final String SQL_QUERY_DELETE_LINKPAGE_ALL = "DELETE FROM linkpages_portlet WHERE id_portlet=?";
     private static final String SQL_QUERY_CHECK_DUPLICATE = "SELECT id_linkpage FROM linkpages_portlet WHERE  id_portlet = ? AND  id_linkpage = ?";
     private static final String SQL_QUERY_INSERT_LINKPAGE = "INSERT INTO linkpages_portlet ( id_portlet, id_linkpage, linkpage_order ) VALUES (?,?,?)";
 
