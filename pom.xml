@@ -39,6 +39,11 @@
             <type>jar</type>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-runtime</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <scm>
         <connection>scm:git:https://github.com/lutece-platform/lutece-cms-plugin-linkpages.git</connection>
