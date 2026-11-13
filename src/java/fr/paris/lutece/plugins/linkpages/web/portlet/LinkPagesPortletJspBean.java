@@ -48,6 +48,7 @@ import fr.paris.lutece.portal.service.page.PageResourceIdService;
 import fr.paris.lutece.portal.service.i18n.I18nService;
 import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.template.AppTemplateService;
+import fr.paris.lutece.portal.service.template.HtmlMarkup;
 import fr.paris.lutece.portal.web.portlet.PortletJspBean;
 import fr.paris.lutece.util.ReferenceItem;
 import fr.paris.lutece.util.ReferenceList;
@@ -173,7 +174,8 @@ public class LinkPagesPortletJspBean extends PortletJspBean
         int nIdPortlet = portlet.getId( );
 
         HashMap<String, Object> model = new HashMap<>(  );
-        model.put( MARK_LINKPAGES_LIST, getLinkPagesInPortletList( request, nIdPortlet ) );
+        // the rows are rendered by the application from escaped values
+        model.put( MARK_LINKPAGES_LIST, HtmlMarkup.of( getLinkPagesInPortletList( request, nIdPortlet ) ) );
         model.put( MARK_PORTLET_ID, nIdPortlet );
 
         int nMax = LinkPagesPortletHome.getMaxOrder( nIdPortlet );
