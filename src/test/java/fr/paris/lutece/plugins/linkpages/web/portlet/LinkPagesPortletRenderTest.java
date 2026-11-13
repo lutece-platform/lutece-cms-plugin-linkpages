@@ -137,6 +137,9 @@ public class LinkPagesPortletRenderTest extends LuteceTestCase
         assertFalse( strHtml.contains( "&lt;tr" ), strHtml );
         assertFalse( strHtml.contains( "&amp;amp;" ), strHtml );
         assertFalse( strHtml.contains( PAGE_NAME ), strHtml );
+        // the page name heads its row and names the row actions
+        assertTrue( strHtml.contains( "scope=\"row\"" ), strHtml );
+        assertTrue( strHtml.contains( " " + PAGE_NAME_ESCAPED + " " ) || strHtml.contains( " " + PAGE_NAME_ESCAPED + "\"" ), strHtml );
     }
 
     /**
