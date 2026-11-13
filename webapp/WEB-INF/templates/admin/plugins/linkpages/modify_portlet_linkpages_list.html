@@ -4,7 +4,7 @@
 	<@boxHeader title='#i18n{linkpages.modify_portlet_linkpages_list.linkpageInsertNewPage}' />
 	<@boxBody>
 		<@tform method='post' action='jsp/admin/plugins/linkpages/DoSelectLinkPage.jsp'>
-			<@input type='hidden' name='portlet_id' id='select_portlet_id' value='${portlet_id!}' />
+			<@input type='hidden' name='portlet_id' id='select_portlet_id' value='${portlet_id?c}' />
 			<@input type='hidden' name='token' id='select_token' value='${token_select}' />
 			<@formGroup labelFor='linkpage' labelKey='#i18n{linkpages.modify_portlet_linkpages_list.labelPage}' mandatory=true rows=2>
 				<@select name='linkpage' default_value='1' items=combo_linkpages mandatory=true />
